@@ -12,10 +12,9 @@ const nextId = require("../utils/nextId");
 function hasOrder(req, res, next) {
   const { data } = req.body;
 
-  if (data) {
-    return next();
-  }
-  next({ status: 400, message: "An 'order' property is required." });
+  data
+    ? next()
+    : next({ status: 400, message: "An 'order' property is required." });
 }
 
 function hasProperties(req, res, next) {
@@ -55,21 +54,16 @@ function orderExists(req, res, next) {
   const { orderId } = req.params;
   const foundOrder = orders.find((order) => order.id === orderId);
 
-  if (foundOrder) {
-    res.locals.order = foundOrder;
-    return next();
-  }
-  next({ status: 404, message: `Order id not found ${orderId}` });
+  foundOrder
+    ? ((res.locals.order = foundOrder), next())
+    : next({ status: 404, message: `Order id not found ${orderId}` });
 }
 
 function create(req, res) {
   const { data } = req.body;
   const newOrder = {
     id: nextId(),
-    deliverTo: data.deliverTo,
-    mobileNumber: data.mobileNumber,
-    status: data.status,
-    dishes: data.dishes,
+    ...data,
   };
   orders.push(newOrder);
   res.status(201).json({ data: newOrder });
@@ -78,14 +72,14 @@ function create(req, res) {
 function destroy(req, res, next) {
   const { orderId } = req.params;
   const order = res.locals.order;
-  if (order.status !== "pending") {
-    next({ status: 400, message: "You can only delete pending orders." });
-  }
-  const index = orders.findIndex((order) => order.id == orderId);
-  if (index > -1) {
-    orders.splice(index, 1);
-  }
-  res.status(204).json({ error: index });
+  let index;
+
+  order.status !== "pending"
+    ? next({ status: 400, message: "You can only delete pending orders." })
+    : (index = orders.findIndex((order) => order.id == orderId)),
+    index > -1
+      ? (orders.splice(index, 1), res.status(204).json({ error: index }))
+      : null;
 }
 
 function list(req, res) {
@@ -101,24 +95,18 @@ function update(req, res, next) {
   let foundOrder = res.locals.order;
   const { orderId } = req.params;
   const { data } = req.body;
+  let id;
 
-  if (!data.status || data.status == "" || data.status == "invalid") {
-    next({ status: 400, message: "Order must have a valid status." });
-  }
-
-  if (!data.id || data.id === "") {
-    const id = foundOrder.id;
-    foundOrder = data;
-    foundOrder.id = id;
-    res.json({ data: foundOrder });
-  }
-  foundOrder = data;
-
-  if (data.id !== orderId) {
-    next({ status: 400, message: `id does not match ${data.id}` });
-  }
-
-  res.json({ data: foundOrder });
+  !data.status || data.status == "invalid"
+    ? next({ status: 400, message: "Order must have a valid status." })
+    : !data.id || data.id === ""
+    ? ((id = foundOrder.id),
+      (foundOrder = data),
+      (foundOrder.id = id),
+      res.json({ data: foundOrder }))
+    : data.id !== orderId
+    ? next({ status: 400, message: `id does not match ${data.id}` })
+    : ((foundOrder = data), res.json({ data: foundOrder }));
 }
 
 module.exports = {

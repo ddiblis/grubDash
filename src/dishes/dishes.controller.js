@@ -10,10 +10,9 @@ const nextId = require("../utils/nextId");
 function hasDish(req, res, next) {
   const { data } = req.body;
 
-  if (data) {
-    return next();
-  }
-  next({ status: 400, message: "A 'dish' property is required." });
+  data
+    ? next()
+    : next({ status: 400, message: "A 'dish' property is required." });
 }
 
 function hasProperties(req, res, next) {
@@ -66,9 +65,8 @@ function create(req, res) {
 function destroy(req, res) {
   const { dishId } = req.params;
   const index = dishes.findIndex((dish) => dish.id == dishId);
-  if (index > -1) {
-    dishes.splice(index, 1);
-  }
+  index > -1 ? dishes.splice(index, 1) : null;
+
   res.status(405).json({ error: index });
 }
 
@@ -85,25 +83,21 @@ function update(req, res, next) {
   let foundDish = res.locals.dish;
   const { dishId } = req.params;
   const { data } = req.body;
+  let id;
 
-  if (typeof data.price !== "number") {
-    next({ status: 400, message: "price must be a number." });
-  }
-
-  if (!data.id || data.id === "") {
-    const id = foundDish.id;
-    foundDish = data;
-    foundDish.id = id;
-    res.json({ data: foundDish });
-  }
-
-  if (data.id !== dishId) {
-    next({ status: 400, message: `id does not match ${data.id}` });
-  }
-
-  foundDish = data;
-
-  res.json({ data: foundDish });
+  // Apparently if you chain a bunch of tenerary operators they act as if elseif statements? So...
+  // Oh apparently you can't declare anything as constant inside them so I had to add a let for the
+  // variable I wanted to use outside as you can see.
+  typeof data.price !== "number"
+    ? next({ status: 400, message: "price must be a number." })
+    : !data.id
+    ? ((id = foundDish.id),
+      (foundDish = data),
+      (foundDish.id = id),
+      res.json({ data: foundDish }))
+    : data.id !== dishId
+    ? next({ status: 400, message: `id does not match ${data.id}` })
+    : ((foundDish = data), res.json({ data: foundDish }));
 }
 
 module.exports = {
@@ -112,5 +106,4 @@ module.exports = {
   read: [dishExists, read],
   update: [dishExists, hasDish, hasProperties, update],
   delete: destroy,
-  dishExists,
 };
