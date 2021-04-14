@@ -85,9 +85,9 @@ function update(req, res, next) {
   const { data } = req.body;
   let id;
 
-  // Apparently if you chain a bunch of tenerary operators they act as if elseif statements? So...
-  // Oh apparently you can't declare anything as constant inside them so I had to add a let for the
-  // variable I wanted to use outside as you can see.
+  //  Apparently if you chain a bunch of tenerary operators they act as if elseif statements? So...
+  //  Oh apparently you can't declare anything as constant inside them so I had to add a let for the
+  //  variable I wanted to use outside as you can see.
   typeof data.price !== "number"
     ? next({ status: 400, message: "price must be a number." })
     : !data.id

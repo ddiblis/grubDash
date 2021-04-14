@@ -97,6 +97,7 @@ function update(req, res, next) {
   const { data } = req.body;
   let id;
 
+  // I did this out of boredom and to expriment and see how far I could take it all.
   !data.status || data.status == "invalid"
     ? next({ status: 400, message: "Order must have a valid status." })
     : !data.id || data.id === ""
